@@ -1,17 +1,493 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#071a30">
+  <meta name="description" content="Explore a Smithsonian spacesuit model in an interactive 3D viewer from Kotebe University of Education.">
+  <title>Interactive 3D Viewer | Kotebe University of Education</title>
+  <link rel="icon" type="image/png" href="./assets/kue-logo.png">
+  <link rel="preload" href="./assets/NeilArmstrong.glb" as="fetch" crossorigin>
+  <script type="module" src="./assets/model-viewer.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #071a30;
+      color: #f7f9fc;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --panel: rgba(8, 26, 47, .78);
+      --panel-border: rgba(211, 225, 244, .18);
+      --muted: #b5c4d8;
+      --blue: #2877d4;
+      --gold: #e7bd62;
+    }
 
-      <!-- Import the component -->
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.4.0/model-viewer.min.js"></script>
+    * { box-sizing: border-box; }
 
-    <title>Kotebe AR Sample</title>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    body { min-height: 100vh; min-height: 100svh; }
+
+    button, a { font: inherit; }
+
+    .experience {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      height: 100svh;
+      min-height: 360px;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        radial-gradient(ellipse at 50% 44%, rgba(38, 75, 111, .52) 0%, rgba(13, 37, 64, .48) 32%, transparent 67%),
+        linear-gradient(145deg, #071a30 0%, #0b2440 55%, #08182b 100%);
+    }
+
+    .experience::before {
+      position: absolute;
+      z-index: -1;
+      inset: 0;
+      content: "";
+      opacity: .16;
+      background-image: radial-gradient(rgba(221, 231, 244, .28) .7px, transparent .7px);
+      background-size: 28px 28px;
+      mask-image: linear-gradient(to bottom, black, transparent 80%);
+      pointer-events: none;
+    }
+
+    model-viewer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      --poster-color: transparent;
+      --progress-bar-color: var(--gold);
+      --progress-bar-height: 3px;
+      outline: none;
+    }
+
+    .topbar {
+      position: absolute;
+      z-index: 2;
+      top: max(20px, env(safe-area-inset-top));
+      left: max(24px, env(safe-area-inset-left));
+      right: max(24px, env(safe-area-inset-right));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      pointer-events: none;
+    }
+
+    .brand, .brand-mark, .brand-copy, .top-label { pointer-events: auto; }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 13px;
+      min-width: 0;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      display: grid;
+      flex: 0 0 auto;
+      width: 58px;
+      height: 58px;
+      padding: 4px;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .8);
+      border-radius: 17px;
+      background: #fff;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, .22);
+    }
+
+    .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
+
+    .brand-copy { display: grid; gap: 4px; }
+
+    .brand-name {
+      max-width: 340px;
+      font-size: .91rem;
+      font-weight: 760;
+      letter-spacing: .085em;
+      line-height: 1.25;
+      text-transform: uppercase;
+    }
+
+    .brand-subtitle { color: #c7d3e2; font-size: .78rem; letter-spacing: .015em; }
+
+    .top-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 14px;
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      background: var(--panel);
+      color: #d7e3f1;
+      font-size: .76rem;
+      font-weight: 650;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .top-label::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 13px rgba(231, 189, 98, .75);
+      content: "";
+    }
+
+    .model-info {
+      position: absolute;
+      z-index: 2;
+      bottom: max(26px, env(safe-area-inset-bottom));
+      left: max(24px, env(safe-area-inset-left));
+      display: grid;
+      width: min(370px, calc(100vw - 48px));
+      gap: 12px;
+      padding: 18px 20px;
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, .2);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--gold);
+      font-size: .68rem;
+      font-weight: 750;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.15rem, 2vw, 1.45rem);
+      font-weight: 680;
+      letter-spacing: -.025em;
+      line-height: 1.2;
+    }
+
+    .credit { margin: 6px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.45; }
+
+    .model-status {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 19px;
+      color: #d6e1ee;
+      font-size: .78rem;
+      line-height: 1.35;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: #e7bd62;
+      box-shadow: 0 0 12px rgba(231, 189, 98, .55);
+    }
+
+    .model-status[data-state="ready"] .status-dot { background: #62d6a1; box-shadow: 0 0 12px rgba(98, 214, 161, .5); }
+    .model-status[data-state="error"] .status-dot { background: #ff857a; box-shadow: 0 0 12px rgba(255, 133, 122, .5); }
+
+    .progress-track {
+      width: 100%;
+      height: 3px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, .13);
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--gold);
+      transition: width .18s ease-out;
+    }
+
+    .retry-button {
+      justify-self: start;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: #fff;
+      font-size: .78rem;
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+    }
+
+    .retry-button[hidden] { display: none; }
+
+    .interaction-hint {
+      position: absolute;
+      z-index: 1;
+      bottom: max(38px, env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 14px;
+      border: 1px solid rgba(211, 225, 244, .12);
+      border-radius: 999px;
+      background: rgba(8, 26, 47, .52);
+      color: #d5dfeb;
+      font-size: .76rem;
+      white-space: nowrap;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      pointer-events: none;
+    }
+
+    .controls {
+      position: absolute;
+      z-index: 2;
+      right: max(24px, env(safe-area-inset-right));
+      bottom: max(26px, env(safe-area-inset-bottom));
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .control-button {
+      display: inline-flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 14px;
+      border: 1px solid rgba(214, 228, 245, .2);
+      border-radius: 13px;
+      background: rgba(11, 32, 55, .82);
+      color: #f7f9fc;
+      font-size: .8rem;
+      font-weight: 650;
+      cursor: pointer;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, .2);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: transform .16s ease, border-color .16s ease, background .16s ease;
+    }
+
+    .control-button:hover { transform: translateY(-2px); border-color: rgba(231, 189, 98, .58); background: rgba(18, 46, 76, .94); }
+    .control-button:active { transform: translateY(0); }
+    .control-button.primary { border-color: rgba(53, 132, 220, .8); background: #1764b4; }
+    .control-button.primary:hover { background: #2478d1; }
+    .control-button svg { width: 17px; height: 17px; flex: 0 0 auto; }
+
+    :focus-visible { outline: 3px solid #f0c96f; outline-offset: 3px; }
+
+    @media (max-width: 760px) {
+      .topbar { top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); gap: 10px; }
+      .brand { gap: 10px; }
+      .brand-mark { width: 48px; height: 48px; border-radius: 14px; }
+      .brand-name { max-width: 230px; font-size: .76rem; letter-spacing: .06em; }
+      .brand-subtitle { font-size: .69rem; }
+      .top-label { padding: 8px 10px; font-size: .62rem; }
+      .top-label::before { width: 6px; height: 6px; }
+      .model-info { bottom: max(86px, calc(env(safe-area-inset-bottom) + 76px)); left: max(12px, env(safe-area-inset-left)); width: min(360px, calc(100vw - 24px)); gap: 8px; padding: 13px 15px; border-radius: 15px; }
+      .eyebrow { margin-bottom: 4px; font-size: .62rem; }
+      h1 { font-size: 1.07rem; }
+      .credit { margin-top: 4px; font-size: .72rem; }
+      .model-status { font-size: .72rem; }
+      .interaction-hint { bottom: max(69px, calc(env(safe-area-inset-bottom) + 59px)); padding: 8px 10px; font-size: .68rem; }
+      .controls { right: max(12px, env(safe-area-inset-right)); bottom: max(13px, env(safe-area-inset-bottom)); left: max(12px, env(safe-area-inset-left)); justify-content: flex-end; gap: 7px; }
+      .control-button { min-height: 43px; gap: 6px; padding: 0 11px; border-radius: 12px; font-size: .74rem; }
+    }
+
+    @media (max-width: 420px) {
+      .top-label { display: none; }
+      .brand-name { max-width: 245px; font-size: .73rem; }
+      .model-info { right: max(12px, env(safe-area-inset-right)); width: auto; }
+      .interaction-hint { left: auto; right: max(12px, env(safe-area-inset-right)); transform: none; }
+      .controls { justify-content: space-between; }
+      .control-button { flex: 1 1 0; padding: 0 8px; font-size: .7rem; }
+      .control-button svg { width: 16px; height: 16px; }
+    }
+
+    @media (max-height: 620px) and (min-width: 761px) {
+      .model-info { bottom: 18px; gap: 8px; padding: 13px 16px; }
+      .controls { bottom: 18px; }
+      .interaction-hint { bottom: 26px; }
+      .topbar { top: 14px; }
+      .brand-mark { width: 48px; height: 48px; }
+    }
+
+    @media (min-width: 761px) and (max-width: 1100px) {
+      .model-info { width: min(330px, calc(100vw - 48px)); }
+      .interaction-hint { bottom: 210px; left: max(24px, env(safe-area-inset-left)); transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
 </head>
 <body>
-  
-<!-- Use it like any other HTML element -->
-<model-viewer alt="Neil Armstrong's Spacesuit from the Smithsonian Digitization Programs Office and National Air and Space Museum" src="https://modelviewer.dev/shared-assets/models/NeilArmstrong.glb" ar environment-image="shared-assets/environments/moon_1k.hdr" poster="shared-assets/models/NeilArmstrong.webp" shadow-intensity="1" camera-controls touch-action="pan-y"></model-viewer>
+  <main class="experience" id="experience" aria-label="Interactive spacesuit viewer">
+    <model-viewer
+      id="spacesuit"
+      src="./assets/NeilArmstrong.glb"
+      poster="./assets/NeilArmstrong.webp"
+      alt="A detailed three-dimensional model of Neil Armstrong's Apollo spacesuit"
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      camera-controls
+      camera-orbit="0deg 75deg 118%"
+      environment-image="neutral"
+      interaction-prompt="auto"
+      loading="eager"
+      shadow-intensity="1"
+      touch-action="pan-y"
+      exposure="1"
+      tabindex="0">
+    </model-viewer>
+
+    <header class="topbar">
+      <a class="brand" href="https://www.kue.edu.et/" target="_blank" rel="noopener noreferrer" aria-label="Kotebe University of Education official website, opens in a new tab">
+        <span class="brand-mark"><img src="./assets/kue-logo.png" alt=""></span>
+        <span class="brand-copy">
+          <span class="brand-name">Kotebe University of Education</span>
+          <span class="brand-subtitle">Interactive 3D experience</span>
+        </span>
+      </a>
+      <span class="top-label">Explore in 3D</span>
+    </header>
+
+    <section class="model-info" aria-label="Model information">
+      <div>
+        <p class="eyebrow">Smithsonian collection</p>
+        <h1>Neil Armstrong’s spacesuit</h1>
+        <p class="credit">3D model courtesy of the Smithsonian Digitization Programs Office and National Air and Space Museum.</p>
+      </div>
+      <div class="model-status" id="model-status" data-state="loading" role="status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="status-text">Loading the 3D model…</span>
+      </div>
+      <div class="progress-track" id="progress-track" role="progressbar" aria-label="3D model loading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <button class="retry-button" id="retry-button" type="button" hidden>Try loading again</button>
+    </section>
+
+    <p class="interaction-hint">Drag to rotate · Pinch or scroll to zoom</p>
+
+    <nav class="controls" aria-label="3D viewer controls">
+      <button class="control-button" id="reset-button" type="button" aria-label="Reset the model view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.4 6.1"/><path d="M3 4v7h7"/></svg>
+        <span>Reset</span>
+      </button>
+      <button class="control-button" id="ar-button" type="button" aria-label="View the model in augmented reality">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.3 7.7 7.7 4.5 7.7-4.5M12 12.2V21"/></svg>
+        <span>View in AR</span>
+      </button>
+      <button class="control-button primary" id="fullscreen-button" type="button" aria-label="Enter fullscreen">
+        <svg id="fullscreen-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        <span id="fullscreen-label">Fullscreen</span>
+      </button>
+    </nav>
+  </main>
+
+  <script>
+    const viewer = document.querySelector('#spacesuit');
+    const stage = document.querySelector('#experience');
+    const status = document.querySelector('#model-status');
+    const statusText = document.querySelector('#status-text');
+    const progressTrack = document.querySelector('#progress-track');
+    const progressFill = document.querySelector('#progress-fill');
+    const retryButton = document.querySelector('#retry-button');
+    const fullscreenButton = document.querySelector('#fullscreen-button');
+    const fullscreenLabel = document.querySelector('#fullscreen-label');
+
+    function setStatus(state, message) {
+      status.dataset.state = state;
+      statusText.textContent = message;
+    }
+
+    viewer.addEventListener('progress', (event) => {
+      const progress = Math.round(event.detail.totalProgress * 100);
+      progressFill.style.width = `${progress}%`;
+      progressTrack.setAttribute('aria-valuenow', String(progress));
+    });
+
+    viewer.addEventListener('load', () => {
+      setStatus('ready', 'Model ready · Drag to explore');
+      progressTrack.hidden = true;
+      retryButton.hidden = true;
+    });
+
+    viewer.addEventListener('error', () => {
+      setStatus('error', 'The model could not load. Check your connection and retry.');
+      progressTrack.hidden = true;
+      retryButton.hidden = false;
+    });
+
+    retryButton.addEventListener('click', () => {
+      const retryUrl = new URL('./assets/NeilArmstrong.glb', window.location.href);
+      retryUrl.searchParams.set('retry', String(Date.now()));
+      viewer.src = retryUrl.href;
+      progressFill.style.width = '0%';
+      progressTrack.setAttribute('aria-valuenow', '0');
+      progressTrack.hidden = false;
+      retryButton.hidden = true;
+      setStatus('loading', 'Loading the 3D model…');
+    });
+
+    document.querySelector('#reset-button').addEventListener('click', () => {
+      viewer.cameraOrbit = '0deg 75deg 118%';
+      viewer.cameraTarget = 'auto auto auto';
+    });
+
+    document.querySelector('#ar-button').addEventListener('click', () => {
+      if (viewer.canActivateAR) {
+        viewer.activateAR();
+      } else {
+        setStatus('ready', 'AR is available on supported phones and browsers.');
+      }
+    });
+
+    function updateFullscreenLabel() {
+      const fullscreen = document.fullscreenElement === stage;
+      fullscreenButton.setAttribute('aria-label', fullscreen ? 'Exit fullscreen' : 'Enter fullscreen');
+      fullscreenLabel.textContent = fullscreen ? 'Exit fullscreen' : 'Fullscreen';
+    }
+
+    fullscreenButton.addEventListener('click', async () => {
+      try {
+        if (document.fullscreenElement === stage) {
+          await document.exitFullscreen();
+        } else if (stage.requestFullscreen) {
+          await stage.requestFullscreen();
+        } else {
+          setStatus('ready', 'This browser already fills the screen.');
+        }
+      } catch {
+        setStatus('ready', 'Fullscreen is unavailable in this browser.');
+      }
+    });
+
+    document.addEventListener('fullscreenchange', updateFullscreenLabel);
+  </script>
 </body>
 </html>
